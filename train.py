@@ -95,10 +95,9 @@ def parser_args():
     return args
 
 def main():
+    
     best_mAP = 0
-
     args = parser_args()
-    print(args)
 
     # build model
     model = build_model(args)

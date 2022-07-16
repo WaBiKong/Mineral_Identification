@@ -74,8 +74,8 @@ def parser_args():
     return args
 
 def main():
+
     args = parser_args()
-    print(args)
 
     # build model
     model = build_model(args).to('cuda:1')

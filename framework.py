@@ -7,9 +7,6 @@ from models.backbone import build_backbone
 from models.transformer import build_transformer
 
 class GroupWiseLinear(nn.Module):
-    # could be changed to: 
-    # output = torch.einsum('ijk,zjk->ij', x, self.W)
-    # or output = torch.einsum('ijk,jk->ij', x, self.W[0])
     def __init__(self, num_class, hidden_dim, bias=True):
         super().__init__()
         self.num_class = num_class
@@ -39,27 +36,14 @@ class GroupWiseLinear(nn.Module):
 
 class myModel(nn.Module):
     def __init__(self, args, backbone, transfomer, num_class):
-        """[summary]
-    
-        Args:
-            backbone ([type]): backbone model.
-            transfomer ([type]): transformer model.
-            num_class ([type]): number of classes.
-        """
+
         super().__init__()
         self.args = args
         self.backbone = backbone
         self.transformer = transfomer
         self.num_class = num_class
-
-        # assert not (self.ada_fc and self.emb_fc), "ada_fc and emb_fc cannot be True at the same time."
         
         hidden_dim = transfomer.d_model
-        # self.input_proj = nn.Conv2d(backbone.num_channels, hidden_dim, kernel_size=1)
-        # self.query_embed = nn.Embedding(num_class, hidden_dim)
-        # self.fc = GroupWiseLinear(num_class, hidden_dim, bias=True)
-
-        # 模型并行
         self.backbone = self.backbone.to('cuda:0')
         self.transformer = self.transformer.to('cuda:1')
         self.input_proj = nn.Conv2d(backbone.num_channels, hidden_dim, kernel_size=1).to('cuda:1')
@@ -82,8 +66,7 @@ class myModel(nn.Module):
 
         hs = self.transformer(self.input_proj(src), query_embed, pos_embed)[0] # B,K,d
         out = self.fc(hs[-1])
-        # import ipdb; ipdb.set_trace()
-        # print(out.shape)
+
         return out
 
 

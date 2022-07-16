@@ -31,8 +31,6 @@ class FrozenBatchNorm2d(torch.nn.Module):
             missing_keys, unexpected_keys, error_msgs)
 
     def forward(self, x):
-        # move reshapes to the beginning
-        # to make it fuser-friendly
         w = self.weight.reshape(1, -1, 1, 1)
         b = self.bias.reshape(1, -1, 1, 1)
         rv = self.running_var.reshape(1, -1, 1, 1)
@@ -44,9 +42,7 @@ class FrozenBatchNorm2d(torch.nn.Module):
 
 class BackboneBase(nn.Module):
 
-    def __init__(self, backbone: nn.Module, train_backbone: bool, num_channels: int, return_layers: Dict,
-    # return_interm_layers: bool
-    ):
+    def __init__(self, backbone: nn.Module, train_backbone: bool, num_channels: int, return_layers: Dict,):
         super().__init__()
         for name, parameter in backbone.named_parameters():
             if not train_backbone or 'layer2' not in name and 'layer3' not in name and 'layer4' not in name:
@@ -104,15 +100,10 @@ class Joiner(nn.Sequential):
         xs = self[0](input)
         out: List[Tensor] = []
         pos = []
-        if isinstance(xs, dict):
-            for name, x in xs.items():
-                out.append(x)
-                # position encoding
-                pos.append(self[1](x).to(x.dtype))
-        else:
-            # for swin Transformer
-            out.append(xs)
-            pos.append(self[1](xs).to(xs.dtype))
+        for name, x in xs.items():
+            out.append(x)
+            # position encoding
+            pos.append(self[1](x).to(x.dtype))
         return out, pos
 
 

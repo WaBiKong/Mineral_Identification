@@ -1,5 +1,5 @@
 """
-borrow the positional encoding from Detr and simplify the model.
+borrow the positional encoding from DERT and simplify the model.
 """
 import math
 import torch
