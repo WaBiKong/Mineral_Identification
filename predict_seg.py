@@ -1,3 +1,4 @@
+# 用于展示一张图片的分割效果
 import argparse
 import numpy as np
 from PIL import Image
@@ -10,7 +11,7 @@ from USNet import UPerNet
 def parser_args():
 
     parser = argparse.ArgumentParser(description="test demo")
-    parser.add_argument('--num_classes', default=20, type=int, help="Number of query slots")
+    parser.add_argument('--num_classes', default=36, type=int, help="Number of query slots")
 
     # Transformer
     parser.add_argument('--enc_layers', default=0, type=int, 
@@ -32,7 +33,6 @@ def parser_args():
                         help="Type of positional embedding to use on top of the image features")
    
     # parameter
-    # parser.add_argument('--model_name', default='vit', type=str)
     parser.add_argument('--model_name', default='swin', type=str)
     parser.add_argument('--img_size', default=384, type=int,
                         help="size of input images")
@@ -48,11 +48,11 @@ def main():
     model = UPerNet(args=args).to(args.device)
     # 权重加载
     import os
-    path = os.path.join("./checkpoints", "usnet_voc_torch2.pth")
+    path = os.path.join("./checkpoints", "usnet_mineral_torch2.pth")
     model.load_state_dict(torch.load(path))
     print("model upernet load finash!")
 
-    img_path = "./2007_001288.jpg"
+    img_path = "./63087_29_25_1.jpg"
     original_img = Image.open(img_path)
     width, height = original_img.size
     from torchvision import transforms
@@ -67,6 +67,12 @@ def main():
     model.eval()
     out = model(img)
     out = out.argmax(1)
+    print(out[0].shape)
+    for i in range(384):
+        for j in range(384):
+            if out[0][i][j] != 0:
+                print(out[0][i][j])
+                break
 
     with open("./palette.json", "rb") as f:
         pallette_dict = json.load(f)

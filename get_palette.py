@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 
 # 读取mask标签
-target = Image.open("./2007_001288.png")
+target = Image.open("./104263_29_1.png")
 # 获取调色板
 palette = target.getpalette()
 palette = np.reshape(palette, (-1, 3)).tolist()

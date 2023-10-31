@@ -89,6 +89,7 @@ def main():
     for epoch in range(args.epochs):
         torch.cuda.empty_cache()
 
+        print()
         print("Epoch: {}".format(epoch))
         train_loss = train(model, optimizer, train_loader, device,lr_scheduler=scheduler)
         print("train loss: {}".format(train_loss))
