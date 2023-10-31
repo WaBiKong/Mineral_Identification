@@ -63,6 +63,7 @@ class MineralSegmentationDataset(Dataset):
         # 图片名称
         with open(os.path.join(root, img_path), encoding="gbk") as f:
             img_names = json.load(f)
+            
         self.images = [os.path.join(image_dir, x + ".jpg") for x in img_names]
         self.masks = [os.path.join(mask_dir, x + ".png") for x in img_names]
         assert (len(self.images) == len(self.masks))
