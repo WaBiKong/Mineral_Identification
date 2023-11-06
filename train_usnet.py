@@ -33,7 +33,7 @@ def parser_args():
    
     # parameter
     parser.add_argument('--model_name', default='swin', type=str)
-    parser.add_argument('--batch_size', default=8, type=int)
+    parser.add_argument('--batch_size', default=16, type=int)
     parser.add_argument('--img_size', default=384, type=int,
                         help="size of input images")
     

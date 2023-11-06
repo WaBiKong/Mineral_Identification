@@ -15,8 +15,8 @@ def main():
     checkpoints = "/home/wbk/Mineral_Identification/checkpoints/encoder"
 
     # model_name = 'resnet50'
-    # model_name = 'efficientnet_b0'
-    model_name = 'resnext50_32x4d'
+    model_name = 'efficientnet_b0'
+    # model_name = 'resnext50_32x4d'
 
     model = timm.create_model(model_name=model_name, num_classes=36, pretrained=False)
     model_path = os.path.join(checkpoints, model_name + ".pth")
@@ -24,15 +24,15 @@ def main():
 
     # global_pool前一层
     # resnet50 和 resnext50_32x4d
-    target_layers = [model.layer4]
+    # target_layers = [model.layer4]
     # efficientnet_b0
-    # target_layers = [model.bn2]
+    target_layers = [model.bn2]
 
     data_transform = transforms.Compose([transforms.ToTensor(),
                                          transforms.Normalize(mean=[0, 0, 0], std = [1, 1, 1])])
     # load image
-    img_name = "175027_27"
-    target_category = 27
+    img_name = "124674_5_25"
+    target_category = 5
 
     img_path = img_name + ".jpg"
     assert os.path.exists(img_path), "file: '{}' dose not exist.".format(img_path)

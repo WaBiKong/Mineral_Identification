@@ -1,0 +1,4 @@
+Namespace(num_class=36, workers=4, epochs=50, multi=False, hela=True, batch_size=48, img_size=384, lr=0.001, device='cuda:0')
+Data Load Finishing!
+Model load Finishing!
+Epoch:  0

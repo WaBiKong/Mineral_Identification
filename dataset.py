@@ -6,17 +6,40 @@ import json
 from PIL import Image
 import os
 import seg_utils.transforms as T
+import cv2
+
+# 彩色图像进行自适应直方图均衡化
+def hisEqulColor2(img):
+    # 将RGB图像转换到YCrCb空间中
+    ycrcb = cv2.cvtColor(img, cv2.COLOR_BGR2YCR_CB)
+	# 将YCrCb图像通道分离
+    channels = cv2.split(ycrcb)
+
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    clahe.apply(channels[0], channels[0])
+
+    cv2.merge(channels, ycrcb)
+    cv2.cvtColor(ycrcb, cv2.COLOR_YCR_CB2BGR, img)
+    return img
+
+#Laplace
+def laplacian(imagee):
+    kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
+    image_lap = cv2.filter2D(imagee, cv2.CV_8UC3, kernel)
+    return image_lap
 
 class MineralClassificationDataset(Dataset):
     def __init__(self, anno_path, 
                 num_class, 
                 input_transform,
-                multi=True):
+                multi=True,
+                hela=False):
 
         self.path = anno_path
         self.num_class = num_class
         self.transforms = input_transform
         self.multi = multi
+        self.hela = hela
 
         with open(self.path, encoding="gbk") as f:
             samples = json.load(f)
@@ -41,7 +64,16 @@ class MineralClassificationDataset(Dataset):
         return image, label
 
     def load_image(self, img_fpath):
-        img: "Image.Image" = Image.open(img_fpath)
+        # print(self.hela)
+        if self.hela:
+            img_zft = cv2.imread(img_fpath)
+            img_zft = hisEqulColor2(img_zft)
+            img_laplace = cv2.imread(img_fpath)
+            img_laplace = laplacian(img_laplace)
+            hela = cv2.addWeighted(img_zft, 0.4, img_laplace, 0.6,0)
+            img: "Image.Image" = Image.fromarray(cv2.cvtColor(hela, cv2.COLOR_BGR2RGB))
+        else:
+            img: "Image.Image" = Image.open(img_fpath)
         return img.convert("RGB")
 
     def load_labels(self, multi_labels):
@@ -124,17 +156,20 @@ def get_classification_datasets(args):
     train_dataset = MineralClassificationDataset('./annotations/train.json',
                                     num_class=args.num_class,
                                     input_transform=train_transforms,
-                                    multi = args.multi)
+                                    multi = args.multi,
+                                    hela=args.hela)
 
     # 实例化验证数据集
     valid_dataset = MineralClassificationDataset('./annotations/valid.json',
                                     num_class=args.num_class,
                                     input_transform=test_transforms,
-                                    multi = args.multi)
+                                    multi = args.multi,
+                                    hela=args.hela)
     test_dataset = MineralClassificationDataset('./annotations/test.json',
                                     num_class=args.num_class,
                                     input_transform=test_transforms,
-                                    multi = args.multi)
+                                    multi = args.multi,
+                                    hela=args.hela)
 
     train_loader = DataLoader(
                         train_dataset, batch_size=args.batch_size,

@@ -36,7 +36,7 @@ def parser_args():
     parser.add_argument('--model_name', default='swin', type=str)
     parser.add_argument('--img_size', default=384, type=int,
                         help="size of input images")
-    parser.add_argument('--device', default='cuda:0', type=str)
+    parser.add_argument('--device', default='cuda:1', type=str)
              
     args = parser.parse_args()
     return args
@@ -52,7 +52,8 @@ def main():
     model.load_state_dict(torch.load(path))
     print("model upernet load finash!")
 
-    img_path = "./63087_29_25_1.jpg"
+    img_name = "./51563_30"
+    img_path = img_name + ".jpg"
     original_img = Image.open(img_path)
     width, height = original_img.size
     from torchvision import transforms
@@ -67,12 +68,6 @@ def main():
     model.eval()
     out = model(img)
     out = out.argmax(1)
-    print(out[0].shape)
-    for i in range(384):
-        for j in range(384):
-            if out[0][i][j] != 0:
-                print(out[0][i][j])
-                break
 
     with open("./palette.json", "rb") as f:
         pallette_dict = json.load(f)
@@ -85,7 +80,7 @@ def main():
     prediction = prediction.to("cpu").numpy().astype(np.uint8)
     mask = Image.fromarray(prediction)
     mask.putpalette(pallette)
-    mask.save("test_result.png")
+    mask.save(img_name + "_mistake_result.png")
 
 
 if __name__ == '__main__':

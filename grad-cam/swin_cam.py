@@ -47,8 +47,8 @@ def main():
     data_transform = transforms.Compose([transforms.ToTensor(),
                                          transforms.Normalize(mean=[0, 0, 0], std = [1, 1, 1])])
     # load image
-    img_name = "175027_27"
-    target_category = 27
+    img_name = "124674_5_25"
+    target_category = 5
 
     img_path = img_name + ".jpg"
     assert os.path.exists(img_path), "file: '{}' dose not exist.".format(img_path)

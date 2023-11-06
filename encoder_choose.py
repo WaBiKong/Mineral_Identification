@@ -22,11 +22,12 @@ def parser_args():
     parser.add_argument('--workers', default=4, type=int)
     parser.add_argument('--epochs', default=50, type=int)
     parser.add_argument('--multi', type=bool, default=False)
-    parser.add_argument('--batch_size', default=16, type=int)
+    parser.add_argument('--hela', type=bool, default=True)
+    parser.add_argument('--batch_size', default=48, type=int)
     parser.add_argument('--img_size', default=384, type=int)
-    # parser.add_argument('--lr', type=float, default=0.001)
+    parser.add_argument('--lr', type=float, default=0.001)
 	# for vision transformer lr=0.0001
-    parser.add_argument('--lr', type=float, default=0.0001)
+    # parser.add_argument('--lr', type=float, default=0.0001)
     parser.add_argument('--device', type=str, default='cuda:0')
              
     args = parser.parse_args()
@@ -44,11 +45,11 @@ def main():
     print("Data Load Finishing!")
 
     # build model
-    # model = timm.create_model("resnet50", num_classes=36, pretrained=True)
+    model = timm.create_model("resnet50", num_classes=36, pretrained=True)
     # model = timm.create_model("efficientnet_b0", num_classes=36, pretrained=True)
     # model = timm.create_model("resnext50_32x4d", num_classes=36, pretrained=True)
     # model = timm.create_model("vit_base_patch16_384", num_classes=36, pretrained=True)
-    model = timm.create_model("swin_base_patch4_window12_384", num_classes=36, pretrained=True)
+    # model = timm.create_model("swin_base_patch4_window12_384", num_classes=36, pretrained=True)
     model = model.to(args.device)
     print("Model load Finishing!")
 
@@ -71,11 +72,11 @@ def main():
         model_path = "./checkpoints/encoder"
         if not os.path.exists(model_path):
             os.makedirs(model_path)
-        # model_name = 'resnet50.pth'
+        model_name = 'resnet50_HELA.pth'
         # model_name = 'efficientnet_b0.pth'
         # model_name = 'resnext50_32x4d.pth'
         # model_name = 'vit_base_patch16_384.pth'
-        model_name = 'swin_base_patch4_window12_384.pth'
+        # model_name = 'swin_base_patch4_window12_384.pth'
         if best_top1 < valid_top1:
             best_top1 = valid_top1
             try:
