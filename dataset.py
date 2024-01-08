@@ -33,13 +33,15 @@ class MineralClassificationDataset(Dataset):
                 num_class, 
                 input_transform,
                 multi=True,
-                hela=False):
+                hela=False,
+                laplace=False):
 
         self.path = anno_path
         self.num_class = num_class
         self.transforms = input_transform
         self.multi = multi
         self.hela = hela
+        self.laplace = laplace
 
         with open(self.path, encoding="gbk") as f:
             samples = json.load(f)
@@ -72,7 +74,11 @@ class MineralClassificationDataset(Dataset):
             img_laplace = laplacian(img_laplace)
             hela = cv2.addWeighted(img_zft, 0.4, img_laplace, 0.6,0)
             img: "Image.Image" = Image.fromarray(cv2.cvtColor(hela, cv2.COLOR_BGR2RGB))
-        else:
+        elif self.laplace:
+            img_laplace = cv2.imread(img_fpath)
+            img_laplace = laplacian(img_laplace)
+            img: "Image.Image" = Image.fromarray(cv2.cvtColor(img_laplace, cv2.COLOR_BGR2RGB))
+        else :
             img: "Image.Image" = Image.open(img_fpath)
         return img.convert("RGB")
 
