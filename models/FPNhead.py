@@ -47,7 +47,7 @@ class PPMHEAD(nn.Module):
         return out
 
 class FPNHEAD(nn.Module):
-    def __init__(self, channels=2048, out_channels=256):
+    def __init__(self, channels=1024, out_channels=128):
         super(FPNHEAD, self).__init__()
         self.PPMHead = PPMHEAD(in_channels=channels, out_channels=out_channels)
 
@@ -92,25 +92,37 @@ class FPNHEAD(nn.Module):
         self.conv_x1 = nn.Conv2d(out_channels, out_channels, 1)
 
     def forward(self, input_fpn):
-        # b, 512, 7, 7
-        x1 = self.PPMHead(input_fpn[-1])
+        # input_fpn
+        # torch.Size([B, 128, 96, 96])
+        # torch.Size([B, 256, 48, 48])
+        # torch.Size([B, 512, 24, 24])
+        # torch.Size([B, 1024, 12, 12])
 
+        x1 = self.PPMHead(input_fpn[-1]) # torch.Size([B, 128, 12, 12])
+
+        # 线性插值，图像大一倍，通道数不变，x.shape: torch.Size([B, 128, 24, 24])
         x = nn.functional.interpolate(x1, size=(x1.size(2)*2, x1.size(3)*2),mode='bilinear', align_corners=True)
-        x = self.conv_x1(x) + self.Conv_fuse1(input_fpn[-2])
-        x2 = self.Conv_fuse1_(x)
+        x = self.conv_x1(x) + self.Conv_fuse1(input_fpn[-2]) # torch.Size([B, 128, 24, 24])
+        x2 = self.Conv_fuse1_(x) # x2.shape: torch.Size([B, 128, 24, 24])
 
+        # x.shape: torch.Size([B, 128, 48, 48])
         x = nn.functional.interpolate(x2, size=(x2.size(2)*2, x2.size(3)*2),mode='bilinear', align_corners=True)
         x = x + self.Conv_fuse2(input_fpn[-3])
-        x3 = self.Conv_fuse2_(x)
+        x3 = self.Conv_fuse2_(x) # x3.shape: torch.Size([B, 128, 48, 48])
 
+        # x.shape: torch.Size([B, 128, 96, 96])
         x = nn.functional.interpolate(x3, size=(x3.size(2)*2, x3.size(3)*2),mode='bilinear', align_corners=True)
         x = x + self.Conv_fuse3(input_fpn[-4])
-        x4 = self.Conv_fuse3_(x)
+        x4 = self.Conv_fuse3_(x) # x4.shape: torch.Size([B, 128, 96, 96])
 
+        # x1.shape: torch.Size([B, 128, 12, 12]) -> torch.Size([B, 128, 96, 96])
         x1 = F.interpolate(x1, x4.size()[-2:],mode='bilinear', align_corners=True)
+        # x2.shape: torch.Size([B, 128, 24, 24]) -> torch.Size([B, 128, 96, 96])
         x2 = F.interpolate(x2, x4.size()[-2:],mode='bilinear', align_corners=True)
+        # x3.shape: torch.Size([B, 128, 24, 24]) -> torch.Size([B, 128, 96, 96])
         x3 = F.interpolate(x3, x4.size()[-2:],mode='bilinear', align_corners=True)
 
-        x = self.fuse_all(torch.cat([x1, x2, x3, x4], 1))
+        x = torch.cat([x1, x2, x3, x4], 1) # torch.Size([B, 512, 96, 96])
+        x = self.fuse_all(x)
 
         return x

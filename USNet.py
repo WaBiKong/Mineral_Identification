@@ -29,19 +29,22 @@ class UPerNet(nn.Module):
 
     def forward(self, x):
         x = self.backbone(x)
-        x1 = x['swin1'].permute(0, 3, 1, 2)
-        x2 = x['swin2'].permute(0, 3, 1, 2)
-        x3 = x['swin3'].permute(0, 3, 1, 2)
-        x4 = x['swin4'].permute(0, 3, 1, 2)
+        x1 = x['swin1'].permute(0, 3, 1, 2) # torch.Size([8, 128, 96, 96])
+        x2 = x['swin2'].permute(0, 3, 1, 2) # torch.Size([8, 256, 48, 48])
+        x3 = x['swin3'].permute(0, 3, 1, 2) # torch.Size([8, 512, 24, 24])
+        x4 = x['swin4'].permute(0, 3, 1, 2) # torch.Size([8, 1024, 12, 12])
         x_list = []
         x_list.append(x1)
         x_list.append(x2)
         x_list.append(x3)
         x_list.append(x4)
         x = self.decoder(x_list)
+        # x.shape: torch.Size([B, 128, 96, 96])
 
+        # 线性插值，图像大4倍，通道数不变: torch.Size([B, 128, 96, 96]) -> torch.Size([B, 128, 384, 384])
         x = nn.functional.interpolate(
             x, size=(x.size(2)*4, x.size(3)*4),mode='bilinear', align_corners=True
         )
         x = self.cls_seg(x)
+        # x.shape: torch.Size([B, 37, 384, 384])
         return x
