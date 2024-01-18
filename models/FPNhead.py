@@ -126,3 +126,63 @@ class FPNHEAD(nn.Module):
         x = self.fuse_all(x)
 
         return x
+    
+# GAU
+class GAU(nn.Module):
+    def __init__(self, channels_high, channels_low, upsample=True):
+        super(GAU, self).__init__()
+        # Global Attention Upsample
+        self.upsample = upsample  # 是否进行上采样的标志
+
+        # 3x3卷积用于处理低层特征
+        self.conv3x3 = nn.Conv2d(channels_low, channels_low, kernel_size=3, padding=1, bias=False)
+        self.bn_low = nn.BatchNorm2d(channels_low)  # 低层特征的批归一化层
+
+        # 1x1卷积用于处理高层特征，将通道数降到与低层特征相同
+        self.conv1x1 = nn.Conv2d(channels_high, channels_low, kernel_size=1, padding=0, bias=False)
+        self.bn_high = nn.BatchNorm2d(channels_low)  # 高层特征的批归一化层
+
+        if upsample:
+            # 转置卷积用于上采样高层特征
+            self.conv_upsample = nn.ConvTranspose2d(channels_high, channels_low, kernel_size=4, stride=2, padding=1, bias=False)
+            self.bn_upsample = nn.BatchNorm2d(channels_low)  # 上采样过程中的批归一化层
+        else:
+            # 1x1卷积用于降采样高层特征
+            self.conv_reduction = nn.Conv2d(channels_high, channels_low, kernel_size=1, padding=0, bias=False)
+            self.bn_reduction = nn.BatchNorm2d(channels_low)  # 降采样过程中的批归一化层
+
+        self.relu = nn.ReLU(inplace=True)  # ReLU激活函数
+
+    def forward(self, fms_high, fms_low, fm_mask=None):
+        """
+        Use the high level features with abundant category information to weight the low level features with pixel
+        localization information. In the meantime, we further use mask feature maps with category-specific information
+        to localize the mask position.
+        :param fms_high: Features of high level. Tensor.
+        :param fms_low: Features of low level. Tensor.
+        :param fm_mask: Mask feature maps with category-specific information. Optional.
+        :return: Fused and possibly upsampled features.
+        """
+        b, c, h, w = fms_high.shape  # 获取高层特征的形状信息
+
+        # 对高层特征进行全局平均池化，并用1x1卷积处理后进行批归一化
+        fms_high_gp = nn.AvgPool2d(fms_high.shape[2:])(fms_high).view(len(fms_high), c, 1, 1)
+        fms_high_gp = self.conv1x1(fms_high_gp)
+        fms_high_gp = self.bn_high(fms_high_gp)
+        fms_high_gp = self.relu(fms_high_gp)
+
+        # 用3x3卷积处理低层特征，并进行批归一化
+        fms_low_mask = self.conv3x3(fms_low)
+        fms_low_mask = self.bn_low(fms_low_mask)
+
+        # 将低层特征与加权的高层特征相乘
+        fms_att = fms_low_mask * fms_high_gp
+
+        if self.upsample:  # 如果进行上采样
+            # 转置卷积进行上采样，然后与加权后的特征相加，并通过批归一化和ReLU激活函数
+            out = self.relu(self.bn_upsample(self.conv_upsample(fms_high)) + fms_att)
+        else:
+            # 1x1卷积进行降采样，然后与加权后的特征相加，并通过批归一化和ReLU激活函数
+            out = self.relu(self.bn_reduction(self.conv_reduction(fms_high)) + fms_att)
+
+        return out
