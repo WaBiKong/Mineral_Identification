@@ -1,50 +1,29 @@
-import argparse
-
+import segmentation_models_pytorch as smp
 import torch
+import argparse
 from torch.optim import lr_scheduler
 
-from USNet import UPerNet
 from dataset import get_segmentation_datasets
 from seg_utils.seg_train_utils import train_one_epoch as train
 from seg_utils.seg_train_utils import evaluate as validate
 
+
+
 def parser_args():
 
-    parser = argparse.ArgumentParser(description="train usnet")
+    parser = argparse.ArgumentParser(description="train Unet")
 
-    # Transformer
-    parser.add_argument('--enc_layers', default=0, type=int, 
-                        help="Number of encoding layers in the transformer")
-    parser.add_argument('--dec_layers', default=2, type=int,
-                        help="Number of decoding layers in the transformer")
-    parser.add_argument('--dim_feedforward', default=512, type=int,
-                        help="Intermediate size of the feedforward layers in the transformer blocks")
-    parser.add_argument('--hidden_dim', default=2048, type=int,
-                        help="Size of the embeddings (dimension of the transformer)")
-    parser.add_argument('--dropout', default=0.1, type=float,
-                        help="Dropout applied in the transformer")
-    parser.add_argument('--nheads', default=4, type=int,
-                        help="Number of attention heads inside the transformer's attentions")
-    parser.add_argument('--pre_norm', action='store_true')
- 
-    # position_embedding
-    parser.add_argument('--position_embedding', default='sine', type=str, choices=('sine'),
-                        help="Type of positional embedding to use on top of the image features")
-   
-    # parameter
-    parser.add_argument('--model_name', default='swin', type=str)
     parser.add_argument('--batch_size', default=16, type=int)
     parser.add_argument('--img_size', default=384, type=int,
                         help="size of input images")
     
     # 要分割的矿物图片种类
-    parser.add_argument('--num_classes', default=36, type=int, help="Number of query slots")
+    parser.add_argument('--num_classes', default=36, type=int)
 
     parser.add_argument('--workers', default=8, type=int, metavar='N',
                         help='number of data loading workers')
     parser.add_argument('--epochs', default=200, type=int, metavar='N',
                         help='number of total epochs to run')
-    
     parser.add_argument('--lr', default=1e-4, type=float,
                         metavar='LR', help='initial learning rate', dest='lr')
     parser.add_argument('--weight_decay', default=1e-2, type=float,
@@ -59,19 +38,17 @@ def main():
     
     args = parser_args()
     best_miou = 0.0
+    device = args.device
     
     train_loader, val_loader, test_loader = get_segmentation_datasets(args=args)
     print("dataset load finash!")
 
-    model = UPerNet(args=args).to(args.device)
-    # 冻结backbone部分的权重
-    for param in model.backbone.parameters():
-        param.requires_grad = False
-
-    # # 查看网络中参与训练的参数
-    # for name, param in model.named_parameters():
-    #     if param.requires_grad:
-    #         print(name)
+    model = smp.PSPNet(
+        'resnet34',
+        encoder_weights='imagenet',
+        in_channels=3,
+        classes=args.num_classes + 1
+    ).to(device)
     print("model load finash!")
 
     # define optimizer
@@ -85,7 +62,6 @@ def main():
         epochs=args.epochs, pct_start=0.2
     )
 
-    device = args.device
     for epoch in range(args.epochs):
         torch.cuda.empty_cache()
 
@@ -107,7 +83,7 @@ def main():
         import os
         if not os.path.exists(model_path):
             os.makedirs(model_path)
-        model_name = 'usnet_mineral_torch2.pth'
+        model_name = 'PSPNet_seg.pth'
         if best_miou < miou:
             best_miou = miou
             try:

@@ -119,7 +119,7 @@ def main():
         print("validate loss: {}, mAP: {}".format(valid_loss, mAP))
 
         # 保存表现最好的模型
-        model_path = "./checkpoints"
+        model_path = "./checkpoints/class"
         if not os.path.exists(model_path):
             os.makedirs(model_path)
         model_name = args.model_name + '_classification_torch2.pth'
